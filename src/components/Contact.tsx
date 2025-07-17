@@ -1,40 +1,10 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Send, Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
-
-// Form validation schema
-const contactSchema = z.object({
-  name: z.string()
-    .min(2, "Name must be at least 2 characters")
-    .max(50, "Name must be less than 50 characters")
-    .regex(/^[a-zA-Z\s\-']+$/, "Name can only contain letters, spaces, hyphens, and apostrophes"),
-  email: z.string()
-    .email("Please enter a valid email address")
-    .max(100, "Email must be less than 100 characters"),
-  company: z.string()
-    .max(100, "Company name must be less than 100 characters")
-    .regex(/^[a-zA-Z0-9\s\-&.,']+$/, "Company name contains invalid characters")
-    .optional(),
-  project: z.string().optional(),
-  industry: z.string().optional(),
-  message: z.string()
-    .min(10, "Message must be at least 10 characters")
-    .max(2000, "Message must be less than 2000 characters")
-});
-
-// Input sanitization function
-const sanitizeInput = (input: string): string => {
-  return input
-    .replace(/[<>]/g, '') // Remove angle brackets
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, '') // Remove event handlers
-    .trim();
-};
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -46,113 +16,36 @@ export function Contact() {
     message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [lastSubmission, setLastSubmission] = useState<number>(0);
   const { toast } = useToast();
-  const submitTimeoutRef = useRef<NodeJS.Timeout>();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    const sanitizedValue = sanitizeInput(value);
-    
     setFormData(prev => ({
       ...prev,
-      [name]: sanitizedValue
+      [e.target.name]: e.target.value
     }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ""
-      }));
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
-    // Rate limiting - prevent submissions within 30 seconds
-    const now = Date.now();
-    if (now - lastSubmission < 30000) {
-      toast({
-        title: "Please wait",
-        description: "You can only submit once every 30 seconds.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Simulate form submission
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Clear previous timeout
-    if (submitTimeoutRef.current) {
-      clearTimeout(submitTimeoutRef.current);
-    }
+    toast({
+      title: "Message sent successfully!",
+      description: "We'll get back to you within 24 hours to discuss your project.",
+    });
     
-    // Validate form data
-    try {
-      const validatedData = contactSchema.parse({
-        name: formData.name,
-        email: formData.email,
-        company: formData.company || undefined,
-        project: formData.project || undefined,
-        industry: formData.industry || undefined,
-        message: formData.message
-      });
-      
-      setErrors({});
-      setIsSubmitting(true);
-      setLastSubmission(now);
-      
-      // Additional security checks
-      const hasInvalidContent = Object.values(validatedData).some(value => 
-        value && (
-          value.includes('<script>') ||
-          value.includes('javascript:') ||
-          value.includes('data:') ||
-          value.length > 5000
-        )
-      );
-      
-      if (hasInvalidContent) {
-        throw new Error("Invalid content detected");
-      }
-      
-      // Simulate form submission with timeout
-      submitTimeoutRef.current = setTimeout(async () => {
-        toast({
-          title: "Message sent successfully!",
-          description: "We'll get back to you within 24 hours to discuss your project.",
-        });
-        
-        setFormData({
-          name: "",
-          email: "",
-          company: "",
-          project: "",
-          industry: "",
-          message: ""
-        });
-        setIsSubmitting(false);
-      }, 2000);
-      
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const fieldErrors: Record<string, string> = {};
-        error.errors.forEach(err => {
-          if (err.path[0]) {
-            fieldErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(fieldErrors);
-      } else {
-        toast({
-          title: "Error",
-          description: "There was an error processing your request. Please try again.",
-          variant: "destructive",
-        });
-      }
-      setIsSubmitting(false);
-    }
+    setFormData({
+      name: "",
+      email: "",
+      company: "",
+      project: "",
+      industry: "",
+      message: ""
+    });
+    setIsSubmitting(false);
   };
 
   const industries = [
@@ -286,10 +179,7 @@ export function Contact() {
                       onChange={handleChange}
                       required
                       placeholder="John Doe"
-                      maxLength={50}
-                      className={errors.name ? "border-red-500" : ""}
                     />
-                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">Email *</label>
@@ -300,10 +190,7 @@ export function Contact() {
                       onChange={handleChange}
                       required
                       placeholder="john@company.com"
-                      maxLength={100}
-                      className={errors.email ? "border-red-500" : ""}
                     />
-                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                   </div>
                 </div>
                 
@@ -315,10 +202,7 @@ export function Contact() {
                     value={formData.company}
                     onChange={handleChange}
                     placeholder="Your Company Name"
-                    maxLength={100}
-                    className={errors.company ? "border-red-500" : ""}
                   />
-                  {errors.company && <p className="text-red-500 text-sm mt-1">{errors.company}</p>}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,15 +245,7 @@ export function Contact() {
                     required
                     rows={5}
                     placeholder="Tell us about your project requirements, number of devices, coverage area, specific challenges, and timeline..."
-                    maxLength={2000}
-                    className={errors.message ? "border-red-500" : ""}
                   />
-                  <div className="flex justify-between items-center mt-1">
-                    {errors.message && <p className="text-red-500 text-sm">{errors.message}</p>}
-                    <p className="text-sm text-muted-foreground ml-auto">
-                      {formData.message.length}/2000 characters
-                    </p>
-                  </div>
                 </div>
                 
                 <Button 
