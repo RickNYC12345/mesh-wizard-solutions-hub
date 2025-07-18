@@ -29,6 +29,10 @@ export function Hero() {
               <Button 
                 size="lg" 
                 className="gradient-mesh text-primary-foreground shadow-glow transition-smooth hover:shadow-accent"
+                onClick={() => {
+                  const contactSection = document.getElementById('contact');
+                  contactSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 Start Your Project
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -38,6 +42,10 @@ export function Hero() {
                 size="lg" 
                 variant="outline" 
                 className="network-node border-primary/30 hover:border-primary"
+                onClick={() => {
+                  const servicesSection = document.getElementById('services');
+                  servicesSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 Learn More
               </Button>
